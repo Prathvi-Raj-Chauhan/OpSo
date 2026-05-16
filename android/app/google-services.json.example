@@ -1,0 +1,16 @@
+{
+  "project_info": {
+    "project_id": "your-firebase-project-id",
+    "project_number": "your-project-number"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "your-app-id",
+        "android_client_info": {
+          "package_name": "com.example.opso"
+        }
+      }
+    }
+  ]
+}

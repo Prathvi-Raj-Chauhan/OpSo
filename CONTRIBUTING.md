@@ -117,8 +117,19 @@ flutter pub get
 ```bash
 flutter doctor
 ```
+5. Firebase Setup
 
-5. Run the app:
+1. Get the shared `google-services.json` from the project maintainer 
+   or community Discord
+2. Place it at `android/app/google-services.json`
+3. `flutter pub get`
+4. `flutter run`
+
+> The Firestore database is read-only for contributors. 
+> Only maintainers can write data.
+
+
+6. Run the app:
 
 ```bash
 flutter run
