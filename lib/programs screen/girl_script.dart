@@ -6,8 +6,10 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/gssoc_project_modal.dart';
 import 'package:opso/programs_info_pages/gssoc_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/gssoc_project_widget.dart';
 import 'package:opso/widgets/year_button.dart';
+
 
 class GSSOCScreen extends StatefulWidget {
   const GSSOCScreen({super.key});
@@ -27,11 +29,12 @@ class _GSSOCScreenState extends State<GSSOCScreen> {
   bool isBookmarked = true;
   Future<void>? getProjectFunction;
 
-  /* List for each ear */
+  /* List for each year */
   List<GssocProjectModal> gssoc2024 = [],
       gssoc2023 = [],
       gssoc2022 = [],
       gssoc2021 = [];
+    
   /* actual list to show */
   List<GssocProjectModal> projectList = [];
 
@@ -68,29 +71,10 @@ class _GSSOCScreenState extends State<GSSOCScreen> {
   ];
 
   Future<List<GssocProjectModal>> _getProjectsByYear(int year) async {
-    switch (year) {
-      case 2021:
-        return gssoc2021.isEmpty ? await loadProjects(2021) : gssoc2021;
-      case 2022:
-        return gssoc2022.isEmpty ? await loadProjects(2022) : gssoc2022;
-      case 2023:
-        return gssoc2023.isEmpty ? await loadProjects(2023) : gssoc2023;
-      case 2024:
-        return gssoc2024.isEmpty ? await loadProjects(2024) : gssoc2024;
-      default:
-        return [];
-    }
+    List<GssocProjectModal> res = await FirestoreService().getGssocProjects(year);
+    return res;
   }
 
-  Future<List<GssocProjectModal>> loadProjects(int year) async {
-    String path = 'assets/projects/gssoc/gssoc${year}.json';
-    String response = await rootBundle.loadString(path);
-
-    var jsonList = json.decode(response) as List;
-    return jsonList
-        .map((data) => GssocProjectModal.getDataFromJson(data))
-        .toList();
-  }
 
   @override
   void initState() {

@@ -5,6 +5,7 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/gsod/gsod_modal_new.dart';
 import 'package:opso/modals/gsod/gsod_modal_old.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/gsod/gsod_project_widget_new.dart';
 import 'package:opso/widgets/gsod/gsod_project_widget_old.dart';
 import 'package:opso/widgets/year_button.dart';
@@ -22,54 +23,19 @@ class _GoogleSeasonOfDocsScreenState extends State<GoogleSeasonOfDocsScreen> {
   String currentProgram = "Google Season of Docs";
   bool isBookmarked = true;
   String currentPage = "/google_season_of_docs";
-  List<GsodModalNew> gsod2023 = [];
-  List<GsodModalNew> gsod2022 = [];
-  List<GsodModalNew> gsod2021 = [];
-  List<GsodModalOld> gsod2020 = [];
-  List<GsodModalOld> gsod2019 = [];
   int selectedYear = 2023;
-
+  List<int> yearList = [2019,2020,2021,2022,2023];
   List projectList = [];
-  List allProjectList = [];
+  // List allProjectList = [];
   Future<void>? getProjectFunction;
 
   Future<void> initializeProjectLists() async {
-    String response =
-        await rootBundle.loadString('assets/projects/gsod/gsod2023.json');
-    var jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      gsod2023.add(GsodModalNew.fromMap(data));
-    }
-    projectList = List.from(gsod2023);
-    allProjectList = List.from(gsod2023);
-
-    response =
-        await rootBundle.loadString('assets/projects/gsod/gsod2022.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      gsod2022.add(GsodModalNew.fromMap(data));
-    }
-
-    response =
-        await rootBundle.loadString('assets/projects/gsod/gsod2021.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      gsod2021.add(GsodModalNew.fromMap(data));
-    }
-
-    response =
-        await rootBundle.loadString('assets/projects/gsod/gsod2020.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      gsod2020.add(GsodModalOld.fromMap(data));
-    }
-
-    response =
-        await rootBundle.loadString('assets/projects/gsod/gsod2019.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      gsod2019.add(GsodModalOld.fromMap(data));
-    }
+    final data = selectedYear <= 2020
+      ? await FirestoreService().getGsodProjectsOld(selectedYear)
+      : await FirestoreService().getGsodProjects(selectedYear);
+  setState(() {
+    projectList = data;
+  });
   }
 
   @override
@@ -152,35 +118,17 @@ class _GoogleSeasonOfDocsScreenState extends State<GoogleSeasonOfDocsScreen> {
     });
   }
 
-  void resetProjectsByLanguage() {
-    switch (selectedYear) {
-      case 2019:
-        projectList = gsod2019;
-        allProjectList = gsod2019;
-        break;
-      case 2020:
-        projectList = gsod2020;
-        allProjectList = gsod2020;
-        break;
-      case 2021:
-        projectList = gsod2021;
-        allProjectList = gsod2021;
-        break;
-      case 2022:
-        projectList = gsod2022;
-        allProjectList = gsod2022;
-        break;
-      case 2023:
-        projectList = gsod2023;
-        allProjectList = gsod2023;
-        break;
-      case 2024:
-        projectList = gsod2023;
-        allProjectList = gsod2023;
-        break;
+  
+    
+        
+    Future<void> resetProjectsByLanguage() async {
+      final data = await FirestoreService().getGsodProjects(selectedYear);
+      setState(() {
+        projectList = data;
+      });
+      filterProjects();
     }
-    filterProjects();
-  }
+  
 
   void filterProjects() {
     var filteredProjects = List.from(projectList);
@@ -193,7 +141,7 @@ class _GoogleSeasonOfDocsScreenState extends State<GoogleSeasonOfDocsScreen> {
             .every((org) => project.organizationName.contains(org));
       }).toList();
     } else {
-      filteredProjects = gsod2023;
+      filteredProjects = projectList;
     }
 
     // Filter by proposals
@@ -219,6 +167,20 @@ class _GoogleSeasonOfDocsScreenState extends State<GoogleSeasonOfDocsScreen> {
     /* if (selectedOrganizations.isEmpty) {
      selectedOrganizations = ['All'];
    }*/
+  }
+
+  Future<void> _onYearChanged(int year) async {
+    setState(() {
+      selectedYear = year;
+      projectList = [];
+    });
+    final data = year <= 2020
+        ? await FirestoreService().getGsodProjectsOld(year)
+        : await FirestoreService().getGsodProjects(year);
+    setState(() {
+      projectList = data;
+      _resetValueIfNotValid();
+    });
   }
 
   @override
@@ -272,6 +234,7 @@ class _GoogleSeasonOfDocsScreenState extends State<GoogleSeasonOfDocsScreen> {
         ]),
         body: FutureBuilder<void>(
           future: getProjectFunction,
+
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -341,76 +304,14 @@ class _GoogleSeasonOfDocsScreenState extends State<GoogleSeasonOfDocsScreen> {
                             mainAxisSpacing: 15,
                           ),
                           children: [
-                            YearButton(
-                              year: "2019",
-                              isEnabled: selectedYear == 2019,
-                              onTap: () {
-                                setState(() {
-                                  projectList = gsod2019;
-                                  selectedYear = 2019;
-                                  _resetValueIfNotValid();
-                                });
-                              },
-                              backgroundColor: selectedYear == 2019
+                            ...yearList.map((year) => YearButton(
+                              year: year.toString(),
+                              isEnabled: selectedYear == year,
+                              onTap: () => _onYearChanged(year),
+                              backgroundColor: selectedYear == year
                                   ? Colors.white
                                   : const Color.fromRGBO(249, 171, 0, 1),
-                            ),
-                            YearButton(
-                              year: "2020",
-                              isEnabled: selectedYear == 2020,
-                              onTap: () {
-                                setState(() {
-                                  projectList = gsod2020;
-                                  selectedYear = 2020;
-                                  _resetValueIfNotValid();
-                                });
-                              },
-                              backgroundColor: selectedYear == 2020
-                                  ? Colors.white
-                                  : const Color.fromRGBO(249, 171, 0, 1),
-                            ),
-                            YearButton(
-                              year: "2021",
-                              isEnabled: selectedYear == 2021,
-                              onTap: () {
-                                setState(() {
-                                  projectList = gsod2021;
-                                  selectedYear = 2021;
-                                  _resetValueIfNotValid();
-                                });
-                              },
-                              backgroundColor: selectedYear == 2021
-                                  ? Colors.white
-                                  : const Color.fromRGBO(249, 171, 0, 1),
-                            ),
-                            YearButton(
-                              year: "2022",
-                              isEnabled: selectedYear == 2022,
-                              onTap: () {
-                                setState(() {
-                                  projectList = gsod2022;
-                                  selectedYear = 2022;
-                                  _resetValueIfNotValid();
-                                });
-                              },
-                              backgroundColor: selectedYear == 2022
-                                  ? Colors.white
-                                  : const Color.fromRGBO(249, 171, 0, 1),
-                            ),
-                            YearButton(
-                              year: "2023",
-                              isEnabled: selectedYear == 2023,
-                              onTap: () {
-                                setState(() {
-                                  projectList = gsod2023;
-                                  selectedYear = 2023;
-                                  _resetValueIfNotValid();
-                                });
-                              },
-                              backgroundColor: selectedYear == 2023
-                                  ? Colors.white
-                                  : const Color.fromRGBO(249, 171, 0, 1),
-                            ),
+                            )).toList(),
                           ],
                         ),
                       ),

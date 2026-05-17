@@ -1,6 +1,8 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:opso/firebase_options.dart';
 import 'package:opso/programs%20screen/fossasia.dart';
 import 'package:opso/programs%20screen/girl_script.dart';
 import 'package:opso/programs%20screen/github_campus.dart';
@@ -26,6 +28,9 @@ void main() async {
   await dotenv.load(fileName: ".env");
 
 
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform
+  );
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
   await NotificationService.initialNotification();
   runApp(OpSoApp(savedThemeMode: savedThemeMode));

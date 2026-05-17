@@ -1,10 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/fossasia_project_modal.dart';
 import 'package:opso/programs_info_pages/fossasia_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/fossaisa_project_widget.dart';
 import 'package:opso/widgets/year_button.dart';
 
@@ -16,57 +15,32 @@ class FOSSASIA extends StatefulWidget {
 }
 
 class _FOSSASIAState extends State<FOSSASIA> {
-  List<FOSSASIAProjectModel> fossasia2020 = [];
-  List<FOSSASIAProjectModel> fossasia2019 = [];
-  List<FOSSASIAProjectModel> fossasia2018 = [];
-  List<FOSSASIAProjectModel> fossasia2017 = [];
-  List<FOSSASIAProjectModel> fossasia2016 = [];
   bool isBookmarked = true;
   String currentPage = "/fossasia";
   String currentProject = "FOSSASIA Codeheat";
   int selectedYear = 2020;
+  List<int> yearList = [2020, 2019, 2018, 2017, 2016];
 
   List<FOSSASIAProjectModel> projectList = [];
   late Future<void> getProjectFunction;
 
   Future<void> initializeProjectLists() async {
-    var response = await rootBundle
-        .loadString('assets/projects/fossasia/fossasia2020.json');
-    var jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      fossasia2020.add(FOSSASIAProjectModel.fromJson(data));
-    }
-    projectList = fossasia2020;
-
-    response = await rootBundle
-        .loadString('assets/projects/fossasia/fossasia2019.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      fossasia2019.add(FOSSASIAProjectModel.fromJson(data));
-    }
-
-    response = await rootBundle
-        .loadString('assets/projects/fossasia/fossasia2018.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      fossasia2018.add(FOSSASIAProjectModel.fromJson(data));
-    }
-
-    response = await rootBundle
-        .loadString('assets/projects/fossasia/fossasia2017.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      fossasia2017.add(FOSSASIAProjectModel.fromJson(data));
-    }
-
-    response = await rootBundle
-        .loadString('assets/projects/fossasia/fossasia2016.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      fossasia2016.add(FOSSASIAProjectModel.fromJson(data));
-    }
+    final data = await FirestoreService().getFossasiaProjects(selectedYear);
+    setState(() {
+      projectList = data;
+    });
   }
 
+  Future<void> _onYearChanged(int year) async {
+    setState(() {
+      selectedYear = year;
+      projectList = [];
+    });
+    final data = await FirestoreService().getFossasiaProjects(year);
+    setState(() {
+      projectList = data;
+    });
+  }
 
   @override
   void initState() {
@@ -82,50 +56,22 @@ class _FOSSASIAState extends State<FOSSASIA> {
     });
   }
 
-  void searchTag(String searchTag) {
-    projectList = projectList
-        .where((element) => element.name.toLowerCase().contains(searchTag))
-        .toList();
-    setState(() {});
-  }
-
   void search(String searchText) {
     if (searchText.isEmpty) {
-      switch (selectedYear) {
-        case 2020:
-          projectList = fossasia2020;
-          break;
-        case 2019:
-          projectList = fossasia2019;
-          break;
-        case 2018:
-          projectList = fossasia2018;
-          break;
-        case 2017:
-          projectList = fossasia2017;
-          break;
-        case 2016:
-          projectList = fossasia2016;
-          break;
-      }
-      setState(() {});
+      initializeProjectLists();
       return;
     }
     searchText = searchText.toLowerCase();
-    projectList = projectList
-        .where((element) =>
-            element.name.toLowerCase().contains(searchText) ||
-            element.description.toLowerCase().contains(searchText))
-        .toList();
-    setState(() {});
+    setState(() {
+      projectList = projectList
+          .where((element) =>
+              element.name.toLowerCase().contains(searchText) ||
+              element.description.toLowerCase().contains(searchText))
+          .toList();
+    });
   }
 
   Future<void> _refresh() async {
-    fossasia2020.clear();
-    fossasia2019.clear();
-    fossasia2018.clear();
-    fossasia2017.clear();
-    fossasia2016.clear();
     await initializeProjectLists();
     setState(() {});
   }
@@ -136,12 +82,11 @@ class _FOSSASIAState extends State<FOSSASIA> {
       onRefresh: _refresh,
       child: Scaffold(
         appBar: AppBar(
-           leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-         
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          centerTitle: true,
           title: const Text('FOSSASIA Codeheat'),
           actions: <Widget>[
             IconButton(
@@ -248,73 +193,16 @@ class _FOSSASIAState extends State<FOSSASIA> {
                             crossAxisSpacing: 15,
                             mainAxisSpacing: 15,
                           ),
-                          children: [
-                            YearButton(
-                              year: "2020",
-                              isEnabled: selectedYear == 2020,
-                              onTap: () {
-                                setState(() {
-                                  projectList = fossasia2020;
-                                  selectedYear = 2020;
-                                });
-                              },
-                              backgroundColor: selectedYear == 2020
-                                  ? Colors.white
-                                  : const Color.fromRGBO(255, 183, 77, 1),
-                            ),
-                            YearButton(
-                              year: "2019",
-                              isEnabled: selectedYear == 2019,
-                              onTap: () {
-                                setState(() {
-                                  projectList = fossasia2019;
-                                  selectedYear = 2019;
-                                });
-                              },
-                              backgroundColor: selectedYear == 2019
-                                  ? Colors.white
-                                  : const Color.fromRGBO(255, 183, 77, 1),
-                            ),
-                            YearButton(
-                              year: "2018",
-                              isEnabled: selectedYear == 2018,
-                              onTap: () {
-                                setState(() {
-                                  projectList = fossasia2018;
-                                  selectedYear = 2018;
-                                });
-                              },
-                              backgroundColor: selectedYear == 2018
-                                  ? Colors.white
-                                  : const Color.fromRGBO(255, 183, 77, 1),
-                            ),
-                            YearButton(
-                              year: "2017",
-                              isEnabled: selectedYear == 2017,
-                              onTap: () {
-                                setState(() {
-                                  projectList = fossasia2017;
-                                  selectedYear = 2017;
-                                });
-                              },
-                              backgroundColor: selectedYear == 2017
-                                  ? Colors.white
-                                  : const Color.fromRGBO(255, 183, 77, 1),
-                            ),
-                            YearButton(
-                              year: "2016",
-                              isEnabled: selectedYear == 2016,
-                              onTap: () {
-                                setState(() {
-                                  projectList = fossasia2016;
-                                  selectedYear = 2016;
-                                });
-                              },
-                              backgroundColor: selectedYear == 2016
-                                  ? Colors.white
-                                  : const Color.fromRGBO(255, 183, 77, 1),
-                            ),
-                          ],
+                          children: yearList
+                              .map((year) => YearButton(
+                                    year: year.toString(),
+                                    isEnabled: selectedYear == year,
+                                    onTap: () => _onYearChanged(year),
+                                    backgroundColor: selectedYear == year
+                                        ? Colors.white
+                                        : const Color.fromRGBO(255, 183, 77, 1),
+                                  ))
+                              .toList(),
                         ),
                       ),
                       SizedBox(height: ScreenUtil().setHeight(20)),
@@ -324,12 +212,13 @@ class _FOSSASIAState extends State<FOSSASIA> {
                           itemCount: projectList.length,
                           itemBuilder: (BuildContext context, int index) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 10),
                               child: FOSSASIAProjectWidget(
                                 modal: projectList[index],
                                 height: ScreenUtil().screenHeight * 0.2,
                                 width: ScreenUtil().screenWidth,
-                                index: index+1,
+                                index: index + 1,
                               ),
                             );
                           },
