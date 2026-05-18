@@ -32,6 +32,7 @@ class _DropdownWidgetState extends State<DropdownWidget> {
     return DropdownButton<String>(
       hint: Text(widget.hintText),
       value: selectedItem,
+      isExpanded: true,
       onChanged: (newValue) {
         setState(() {
           selectedItem = newValue!;

@@ -30,11 +30,11 @@ class _SummerOfBitcoinState extends State<SummerOfBitcoin> {
   Future<void>? getProjectFunction;
 
   Future<void> initializeProjectLists() async {
-  final data = await FirestoreService().getSobProjects(selectedYear);
+    final data = await FirestoreService().getSobProjects(selectedYear);
     setState(() {
       projectList = data;
     });
-}
+  }
 
   Future<void> _onYearChanged(int year) async {
     setState(() {
@@ -180,19 +180,23 @@ class _SummerOfBitcoinState extends State<SummerOfBitcoin> {
                           suffixIcon: const Icon(Icons.search),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFEEEEEE)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFEEEEEE)),
                           ),
                           disabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFEEEEEE)),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFEEEEEE)),
                           ),
                           contentPadding: EdgeInsets.symmetric(
                               vertical: ScreenUtil().setHeight(12),
@@ -229,36 +233,31 @@ class _SummerOfBitcoinState extends State<SummerOfBitcoin> {
                         ),
                       ),
                       SizedBox(height: ScreenUtil().setHeight(20)),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Text(
-                            'Filter by Org:',
-                            style: TextStyle(fontWeight: FontWeight.w400),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(ScreenUtil().setHeight(8)),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                DropdownWidget(
-                                  items: languages,
-                                  hintText: 'Org',
-                                  onChanged: (newValue) async {
-                                    final data = await FirestoreService()
-                                        .getSobProjects(selectedYear);
-                                    setState(() {
-                                      projectList = data;
-                                      searchTag(newValue);
-                                    });
-                                  },
-                                ),
-                              ],
+                      ClipRRect(
+                        child: Row(
+                          // crossAxisAlignment: CrossAxisAlignment.center,
+                          // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            const Text(
+                              'Filter by Org:',
+                              style: TextStyle(fontWeight: FontWeight.w400),
                             ),
-                          ),
-                        ],
+                            Expanded(
+                              child: DropdownWidget(
+                                items: languages,
+                                hintText: 'Org',
+                                onChanged: (newValue) async {
+                                  final data = await FirestoreService()
+                                      .getSobProjects(selectedYear);
+                                  setState(() {
+                                    projectList = data;
+                                    searchTag(newValue);
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       SizedBox(height: ScreenUtil().setHeight(20)),
                       ListView.builder(

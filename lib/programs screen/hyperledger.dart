@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/hyperledger_modal.dart';
 import 'package:opso/programs_info_pages/hyperledger_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/hyperledger_widget.dart';
 import 'package:opso/widgets/year_button.dart';
 
@@ -16,45 +17,19 @@ class Hyperledger extends StatefulWidget {
 }
 
 class _HyperledgerState extends State<Hyperledger> {
-  List<HyperledgerProjectModal> hyperledger2024 = [];
-  List<HyperledgerProjectModal> hyperledger2023 = [];
-  List<HyperledgerProjectModal> hyperledger2022 = [];
-  List<HyperledgerProjectModal> hyperledger2021 = [];
   String currectPage = "/hyperledger";
   String currentProject = "Hyperledger";
   bool isBookmarked = true;
   int selectedYear = 2024;
-
+  List<int> yearList = [2021,2022,2023,2024];
   List<HyperledgerProjectModal> projectList = [];
   late Future<void> getProjectFunction;
 
   Future<void> initializeProjectLists() async {
-    var response = await rootBundle
-        .loadString('assets/projects/hyperledger/hyperledger2024.json');
-    var jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      hyperledger2024.add(HyperledgerProjectModal.fromJson(data));
-    }
-    projectList = hyperledger2024;
-    print(projectList);
-    response = await rootBundle
-        .loadString('assets/projects/hyperledger/hyperledger2023.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      hyperledger2023.add(HyperledgerProjectModal.fromJson(data));
-    }
-    response = await rootBundle
-        .loadString('assets/projects/hyperledger/hyperledger2022.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      hyperledger2022.add(HyperledgerProjectModal.fromJson(data));
-    }
-    response = await rootBundle
-        .loadString('assets/projects/hyperledger/hyperledger2021.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      hyperledger2021.add(HyperledgerProjectModal.fromJson(data));
-    }
+    final data = await FirestoreService().getHyperledgerProjects(selectedYear);
+    setState(() {
+      projectList = data;
+    });
   }
 
   @override
@@ -80,21 +55,9 @@ class _HyperledgerState extends State<Hyperledger> {
 
   void search(String searchText) {
     if (searchText.isEmpty) {
-      switch (selectedYear) {
-        case 2024:
-          projectList = hyperledger2024;
-          break;
-        case 2023:
-          projectList = hyperledger2023;
-          break;
-        case 2022:
-          projectList = hyperledger2022;
-          break;
-        case 2021:
-          projectList = hyperledger2021;
-          break;
-      }
-      setState(() {});
+      
+      initializeProjectLists(); // resets the project list according to the selected year
+      
       return;
     }
     searchText = searchText.toLowerCase();
@@ -107,14 +70,21 @@ class _HyperledgerState extends State<Hyperledger> {
   }
 
   Future<void> _refresh() async {
-    hyperledger2023.clear();
-    hyperledger2024.clear();
-    hyperledger2022.clear();
-    hyperledger2021.clear();
     await initializeProjectLists();
 
     setState(() {});
   }
+  Future<void> _onYearChanged(int year) async {
+    setState(() {
+      selectedYear = year;
+      projectList = [];
+    });
+    final data = await FirestoreService().getHyperledgerProjects(year);
+    setState(() {
+      projectList = data;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -236,58 +206,19 @@ class _HyperledgerState extends State<Hyperledger> {
                               mainAxisSpacing: 15,
                             ),
                             children: [
-                              YearButton(
-                                year: "2024",
-                                isEnabled: selectedYear == 2024,
-                                onTap: () {
-                                  setState(() {
-                                    projectList = hyperledger2024;
-                                    selectedYear = 2024;
-                                  });
-                                },
-                                backgroundColor: selectedYear == 2024
+                              ...yearList.map((year) => YearButton(
+                                  year: year.toString(),
+                                  isEnabled: year == selectedYear,
+                                  onTap : (){
+                                    _onYearChanged(year);
+                                  },
+                                  backgroundColor: selectedYear == year
                                     ? Colors.white
                                     : const Color.fromRGBO(255, 183, 77, 1),
+                                )
                               ),
-                              YearButton(
-                                year: "2023",
-                                isEnabled: selectedYear == 2023,
-                                onTap: () {
-                                  setState(() {
-                                    projectList = hyperledger2023;
-                                    selectedYear = 2023;
-                                  });
-                                },
-                                backgroundColor: selectedYear == 2023
-                                    ? Colors.white
-                                    : const Color.fromRGBO(255, 183, 77, 1),
-                              ),
-                              YearButton(
-                                year: "2022",
-                                isEnabled: selectedYear == 2022,
-                                onTap: () {
-                                  setState(() {
-                                    projectList = hyperledger2022;
-                                    selectedYear = 2022;
-                                  });
-                                },
-                                backgroundColor: selectedYear == 2022
-                                    ? Colors.white
-                                    : const Color.fromRGBO(255, 183, 77, 1),
-                              ),
-                              YearButton(
-                                year: "2021",
-                                isEnabled: selectedYear == 2021,
-                                onTap: () {
-                                  setState(() {
-                                    projectList = hyperledger2021;
-                                    selectedYear = 2021;
-                                  });
-                                },
-                                backgroundColor: selectedYear == 2021
-                                    ? Colors.white
-                                    : const Color.fromRGBO(255, 183, 77, 1),
-                              )
+                              
+                              
                             ],
                           )),
                       ListView.builder(

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:opso/modals/osoc_modal.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/osoc_widget.dart';
 import 'package:opso/widgets/year_button.dart';
 import 'package:opso/programs_info_pages/osoc_info.dart';
@@ -22,25 +23,16 @@ class _OpenSummerOfCodeState extends State<OpenSummerOfCode> {
   String currentProject = "Open Summer of Code";
   bool isBookmarked = true;
   int selectedYear = 2022;
+  List<int> yearList = [2021, 2022];
 
   List<OsocModal> projectList = [];
   Future<void>? getProjectFunction;
 
   Future<void> initializeProjectLists() async {
-    var response =
-        await rootBundle.loadString('assets/projects/osoc/osoc2022.json');
-    var jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      osoc2022.add(OsocModal.fromMap(data));
-    }
-    projectList = osoc2022;
-    print(projectList);
-    response =
-        await rootBundle.loadString('assets/projects/osoc/osoc2021.json');
-    jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      osoc2021.add(OsocModal.fromMap(data));
-    }
+    final data = await FirestoreService().getOsocProjects(selectedYear);
+    setState(() {
+      projectList = data;
+    });
   }
 
   @override
@@ -66,24 +58,27 @@ class _OpenSummerOfCodeState extends State<OpenSummerOfCode> {
 
   void search(String searchText) {
     if (searchText.isEmpty) {
-      switch (selectedYear) {
-        case 2021:
-          projectList = osoc2021;
-          break;
-        case 2022:
-          projectList = osoc2022;
-          break;
-      }
-      setState(() {});
+      initializeProjectLists();
       return;
     }
     searchText = searchText.toLowerCase();
-    projectList = projectList
-        .where((OsocModal element) =>
-            element.name.toLowerCase().contains(searchText) ||
-            element.description.toLowerCase().contains(searchText))
-        .toList();
-    setState(() {});
+    setState(() {
+      projectList = projectList
+          .where((element) =>
+              element.name.toLowerCase().contains(searchText) ||
+              element.description.toLowerCase().contains(searchText))
+          .toList();
+    });
+  }
+  Future<void> _onYearChanged(int year) async {
+    setState(() {
+      selectedYear = year;
+      projectList = [];
+    });
+    final data = await FirestoreService().getOsocProjects(year);
+    setState(() {
+      projectList = data;
+    });
   }
 
   // List<String> languages = [
@@ -104,12 +99,8 @@ class _OpenSummerOfCodeState extends State<OpenSummerOfCode> {
   // ];
 
   Future<void> _refresh() async {
-    osoc2021.clear();
-    osoc2022.clear();
+    setState(() => selectedYear = 2022);
     await initializeProjectLists();
-
-    selectedYear = 2022;
-    setState(() {});
   }
 
   @override
@@ -226,34 +217,14 @@ class _OpenSummerOfCodeState extends State<OpenSummerOfCode> {
                             runSpacing: 15,
                             alignment: WrapAlignment.spaceBetween,
                             children: [
-                              YearButton(
-                                year: "2021",
-                                isEnabled: selectedYear == 2021 ? true : false,
-                                onTap: () {
-                                  setState(() {
-                                    projectList = osoc2021;
-                                    selectedYear = 2021;
-                                  });
-                                },
-                                backgroundColor: selectedYear == 2021
+                              ...yearList.map((year) => YearButton(
+                                year: year.toString(),
+                                isEnabled: selectedYear == year,
+                                onTap: () => _onYearChanged(year),
+                                backgroundColor: selectedYear == year
                                     ? Colors.white
                                     : const Color.fromRGBO(255, 183, 77, 1),
-                              
-                              ),
-                              YearButton(
-                                year: "2022",
-                                isEnabled: selectedYear == 2022 ? true : false,
-                                onTap: () {
-                                  setState(() {
-                                    projectList = osoc2022;
-                                    selectedYear = 2022;
-                                  });
-                                },
-                                backgroundColor: selectedYear == 2022
-                                    ? Colors.white
-                                    : const Color.fromRGBO(255, 183, 77, 1),
-                      
-                              ),
+                              )).toList(),
                             ],
                           );
                         },

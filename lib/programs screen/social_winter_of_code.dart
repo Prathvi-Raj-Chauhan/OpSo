@@ -6,6 +6,7 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/swoc_project_modal.dart';
 import 'package:opso/programs_info_pages/swoc_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/swoc_project_widget.dart';
 import 'package:opso/widgets/year_button.dart';
 
@@ -31,17 +32,14 @@ class _SWOCScreenState extends State<SWOCScreen> {
   bool isBookmarked = true;
   List<SwocProjectModal> projectList = [];
   Future<void>? getProjectFunction;
+  List<int> yearList = [2020,2021,2023,2024];
 
   Future<void> initializeProjectLists() async {
-    await _loadProjects('assets/projects/swoc/swoc2024.json', swoc2024);
-    await _loadProjects('assets/projects/swoc/swoc2023.json', swoc2023);
-    await _loadProjects('assets/projects/swoc/swoc2021.json', swoc2021);
-    await _loadProjects('assets/projects/swoc/swoc2020.json', swoc2020);
-
-    // Populate all unique organizations and languages
-    allOrganizations = _extractUniqueValues((project) => project.owner);
-    allLanguages = languages;
-    projectList = List.from(swoc2024); // Default year
+    final data = await FirestoreService().getSwocProjects(selectedYear);
+    setState(() {
+      allLanguages = languages;
+      projectList = data;
+    });
   }
 
   List<String> languages = [
@@ -116,30 +114,14 @@ class _SWOCScreenState extends State<SWOCScreen> {
     });
   }
 
-  void filterProjects() {
-    // Filter projects by year first
-    projectList = _getProjectsByYear();
-
-    // Filter projects by selected languages
-    if (!selectedLanguages.contains('All')) {
-      projectList = projectList
-          .where((project) => selectedLanguages
-              .every((language) => project.techstack.contains(language)))
-          .toList();
-    }
-
-    // Update the list of organizations based on the filtered projects by language
-    _updateOrganizationList();
-
-    // Filter projects by selected organizations
-    if (!selectedOrganizations.contains('All')) {
-      projectList = projectList
-          .where((project) => selectedOrganizations.contains(project.owner))
-          .toList();
-    }
-
-    // Ensure state is updated to reflect changes
-    setState(() {});
+  void filterProjects() async {
+    final data = await FirestoreService().getSwocProjects(selectedYear);
+    setState(() {
+      projectList = data.where((project) {
+        return selectedLanguages.contains('All') ||
+            selectedLanguages.every((lang) => project.techstack.contains(lang));
+      }).toList();
+    });
   }
 
   void _updateOrganizationList() {
@@ -308,7 +290,16 @@ class _SWOCScreenState extends State<SWOCScreen> {
       },
     );
   }
-
+  Future<void> _onYearChanged(int year) async {
+    setState(() {
+      selectedYear = year;
+      projectList = [];
+    });
+    final data = await FirestoreService().getSwocProjects(year);
+    setState(() {
+      projectList = data;
+    });
+  }
   Widget _buildYearButtons() {
     return SizedBox(
       height: MediaQuery.sizeOf(context).height * 0.2,
@@ -321,58 +312,18 @@ class _SWOCScreenState extends State<SWOCScreen> {
           mainAxisSpacing: 15,
         ),
         children: [
-          YearButton(
-            year: "2020",
-            isEnabled: selectedYear == 2020,
+          ...yearList.map((year) => YearButton(
+            year: year.toString(),
+            isEnabled: selectedYear == year,
             onTap: () {
-              setState(() {
-                selectedYear = 2020;
-                filterProjects();
-              });
-            },
-            backgroundColor: selectedYear == 2020
-                ? Colors.white
-                : const Color.fromRGBO(255, 183, 77, 1),
-          ),
-          YearButton(
-            year: "2021",
-            isEnabled: selectedYear == 2021,
-            onTap: () {
-              setState(() {
-                selectedYear = 2021;
-                filterProjects();
-              });
-            },
-            backgroundColor: selectedYear == 2021
-                ? Colors.white
-                : const Color.fromRGBO(255, 183, 77, 1),
-          ),
-          YearButton(
-            year: "2023",
-            isEnabled: selectedYear == 2023,
-            onTap: () {
-              setState(() {
-                selectedYear = 2023;
-                filterProjects();
-              });
-            },
-            backgroundColor: selectedYear == 2023
-                ? Colors.white
-                : const Color.fromRGBO(255, 183, 77, 1),
-          ),
-          YearButton(
-            year: "2024",
-            isEnabled: selectedYear == 2024,
-            onTap: () {
-              setState(() {
-                selectedYear = 2024;
-                filterProjects();
-              });
-            },
-            backgroundColor: selectedYear == 2024
-                ? Colors.white
-                : const Color.fromRGBO(255, 183, 77, 1),
-          ),
+                _onYearChanged(year);
+              },
+            backgroundColor: selectedYear == year
+              ? Colors.white
+              : const Color.fromRGBO(255, 183, 77, 1),
+            ),
+            
+          )
         ],
       ),
     );

@@ -3,7 +3,7 @@ class SokdeProjectModal {
   String wiki;
   List<String> mentees;
   List<String> mentors;
-  String year;
+  int year;
 
   SokdeProjectModal({
     required this.name,
@@ -33,7 +33,7 @@ class SokdeProjectModal {
       wiki: json['link'],
       mentors: mentorsList,
       mentees: menteesList,
-      year: json['year'].toString(), // Ensure year is converted to string if necessary
+      year: json['year']
     );
   }
 

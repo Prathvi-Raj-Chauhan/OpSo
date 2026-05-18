@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/rsoc_project_modal.dart';
 import 'package:opso/programs_info_pages/rsoc_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/rsoc_project_widget.dart';
 
 class RsocPage extends StatefulWidget {
@@ -24,14 +25,10 @@ class _RsocPageState extends State<RsocPage> {
   late Future<void> getProjectFunction;
 
   Future<void> initializeProjectLists() async {
-    var response =
-        await rootBundle.loadString('assets/projects/redox/redox.json');
-    var jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      allProjects.add(RsocProjectModal.fromJson(data));
-    }
-
-    projects = allProjects;
+    allProjects = await FirestoreService().getRedoxProjects();
+    setState(() {
+      projects = allProjects;
+    });
   }
 
   @override

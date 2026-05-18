@@ -6,6 +6,7 @@ import 'package:multi_select_flutter/util/multi_select_item.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/outreachy_project_modal.dart';
 import 'package:opso/programs_info_pages/outreachy_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/outreachy_project_widget.dart';
 import 'package:opso/widgets/year_button.dart';
 
@@ -20,10 +21,6 @@ class _OutreachyScreenState extends State<OutreachyScreen> {
   String currentPage = "/outreachy";
   String currentProject = "Outreachy";
 
-  List<OutreachyProjectModal> outreachy2024 = [];
-  List<OutreachyProjectModal> outreachy2023 = [];
-  List<OutreachyProjectModal> outreachy2022 = [];
-  List<OutreachyProjectModal> outreachy2021 = [];
 
   bool isBookmarked = false;
   bool isBookmarkEnabled = false;
@@ -31,86 +28,51 @@ class _OutreachyScreenState extends State<OutreachyScreen> {
   List<String> allSkills = [];
   List<String> selectedSkills = ['All'];
 
+  List<int> yearList = [2021, 2022, 2023, 2024];
+
   int selectedYear = 2021;
 
   List<OutreachyProjectModal> projectList = [];
+  Map<int, List<OutreachyProjectModal>> _allYearsData = {};
 
   Future<void>? getProjectFunction;
 
-  Future<void> initializeProjectLists() async {
-    await _loadProjects('assets/projects/outreachy/outreachy$selectedYear.json',
-        _getProjectsByYear());
-
-    allSkills = _extractUniqueSkills();
-    projectList = List.from(_getProjectsByYear());
-  }
-
-  Future<void> _loadProjects(
-      String path, List<OutreachyProjectModal> list) async {
-    try {
-      String response = await rootBundle.loadString(path);
-      if (response.isNotEmpty) {
-        var jsonList = json.decode(response) as List;
-        list.addAll(jsonList
-            .map((data) => OutreachyProjectModal.fromMap(data))
-            .toList());
-        print('Loaded projects from $path: ${list.length}');
-      } else {
-        print('Error: JSON data is null or empty in $path');
-      }
-    } catch (e) {
-      print('Error loading projects from $path: $e');
+ Future<void> initializeProjectLists() async {
+    final results = await Future.wait(
+      yearList.map((year) => FirestoreService().getOutreachyProjects(year))
+    );
+    for (int i = 0; i < yearList.length; i++) {
+      _allYearsData[yearList[i]] = results[i];
     }
+    final allData = results.expand((list) => list).toList();
+    setState(() {
+      projectList = _allYearsData[selectedYear] ?? [];
+      allSkills = _extractUniqueSkills(allData);
+    });
   }
 
-  List<String> _extractUniqueSkills() {
+
+  List<String> _extractUniqueSkills(List<OutreachyProjectModal> allProjects) {
     final skillsSet = <String>{'All'};
-    
-    for (var project in [
-      ...outreachy2021,
-      ...outreachy2022,
-      ...outreachy2023,
-      ...outreachy2024
-    ]) {
+    for (var project in allProjects) {
       skillsSet.addAll(project.skills);
     }
-
     return skillsSet.toList();
   }
 
-  List<OutreachyProjectModal> _getProjectsByYear() {
-    switch (selectedYear) {
-      case 2021:
-        return outreachy2021;
-      case 2022:
-        return outreachy2022;
-      case 2023:
-        return outreachy2023;
-      case 2024:
-        return outreachy2024;
-      default:
-        return [];
-    }
-  }
+ 
 
   void filterProjects([String query = ""]) {
-    projectList = _getProjectsByYear();
-
-    if (!selectedSkills.contains('All')) {
-      projectList = projectList
-          .where((project) =>
-              project.skills.any((skill) => selectedSkills.contains(skill)))
-          .toList();
-    }
-
-    if (query.isNotEmpty) {
-      projectList = projectList
-          .where((project) =>
-              project.name.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    }
-
-    setState(() {});
+    final yearData = _allYearsData[selectedYear] ?? [];
+    setState(() {
+      projectList = yearData.where((project) {
+        final matchesSkill = selectedSkills.contains('All') ||
+            project.skills.any((skill) => selectedSkills.contains(skill));
+        final matchesQuery = query.isEmpty ||
+            project.name.toLowerCase().contains(query.toLowerCase());
+        return matchesSkill && matchesQuery;
+      }).toList();
+    });
   }
 
   @override
@@ -264,37 +226,32 @@ class _OutreachyScreenState extends State<OutreachyScreen> {
   }
 
   Widget _buildYearButtons() {
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 1.5 / 0.6,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [2021, 2022, 2023, 2024].map((year) {
-        bool isSelected = selectedYear == year;
-        return Padding(
-          padding: const EdgeInsets.all(5.0),
-          child: YearButton(
-            year: year.toString(),
-            isEnabled: isSelected,
-            onTap: () async {
+  return GridView.count(
+    crossAxisCount: 2,
+    childAspectRatio: 1.5 / 0.6,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    children: yearList.map((year) {
+      bool isSelected = selectedYear == year;
+      return Padding(
+        padding: const EdgeInsets.all(5.0),
+        child: YearButton(
+          year: year.toString(),
+          isEnabled: isSelected,
+          onTap: () {
+            setState(() {
               selectedYear = year;
-
-              if (_getProjectsByYear().isEmpty) {
-                _loadProjects('assets/projects/outreachy/outreachy$year.json', _getProjectsByYear());
-                allSkills = _extractUniqueSkills();
-              }
-
-              setState(() {
-                filterProjects();
-              });
-            },
-            backgroundColor:
-                isSelected ? Colors.white : Color.fromRGBO(255, 183, 77, 1),
-          ),
-        );
-      }).toList(),
-    );
-  }
+              selectedSkills = ['All'];
+              projectList = _allYearsData[year] ?? [];
+            });
+          },
+          backgroundColor:
+              isSelected ? Colors.white : const Color.fromRGBO(255, 183, 77, 1),
+        ),
+      );
+    }).toList(),
+  );
+}
 
   Widget _buildMultiSelectField({
     required List<String> items,

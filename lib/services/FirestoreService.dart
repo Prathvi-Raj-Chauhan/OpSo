@@ -179,10 +179,11 @@ class FirestoreService {
     return data
         .map((item) => SokdeProjectModal(
               name: item['title'] ?? '',
-              mentors: List<String>.from(item['mentors']),
-              mentees: List<String>.from(item['mentess']),
+              mentors: List<String>.from(item['extra']['mentors']),
+              mentees: List<String>.from(item['extra']['mentees']),
               wiki: item['links']?['official'] ?? '',
               year: item['year'] ?? year,
+              
             ))
         .toList();
   }
@@ -197,7 +198,7 @@ class FirestoreService {
               repo: item['links']?['github'] ?? '',
               techstack: List<String>.from(item['techstack'] ?? []),
               year: item['year']?.toString() ?? year.toString(),
-              owner: item['owner'] ?? '',
+              owner: item['extra']['owner'] ?? '',
             ))
         .toList();
   }
