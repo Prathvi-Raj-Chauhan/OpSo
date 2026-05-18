@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/programs_info_pages/gsoc_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/gsoc/GsocProjectWidget.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import '../modals/GSoC/Gsoc.dart';
@@ -65,17 +66,10 @@ class _GoogleSummerOfCodeScreenState extends State<GoogleSummerOfCodeScreen> {
   }
 
   Future<List<Organization>> loadOrganizations(int year) async {
-    setState(() {
-      _isRefreshing = true;
-    });
-    String path = 'assets/projects/gsoc_org/gsoc${year}org.json';
-    String response = await rootBundle.loadString(path);
-
-    setState(() {
-      _isRefreshing = false;
-    });
-    var decodedResponse = json.decode(response) as List;
-    return decodedResponse.map((org) => Organization.fromJson(org)).toList();
+    setState(() => _isRefreshing = true);
+    final data = await FirestoreService().getGsocOrgs(year);
+    setState(() => _isRefreshing = false);
+    return data;
   }
 
   Future<void> _checkBookmarkStatus() async {
@@ -103,31 +97,14 @@ class _GoogleSummerOfCodeScreenState extends State<GoogleSummerOfCodeScreen> {
   }
 
   Future<List<Organization>> _getOrganizationsByYear(int year) async {
-    switch (year) {
-      case 2021:
-        if (gsoc2021.isEmpty) gsoc2021 = await loadOrganizations(year);
-        return gsoc2021;
-      case 2022:
-        if (gsoc2022.isEmpty) gsoc2022 = await loadOrganizations(year);
-        return gsoc2022;
-      case 2023:
-        if (gsoc2023.isEmpty) gsoc2023 = await loadOrganizations(year);
-        return gsoc2023;
-      case 2024:
-        if (gsoc2024.isEmpty) gsoc2024 = await loadOrganizations(year);
-        return gsoc2024;
-      default:
-        return [];
-    }
+    return await FirestoreService().getGsocOrgs(year);
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      initializeProjectLists();
-      selectedYear = 2024;
-      selectedLanguages = ['All'];
-      filterProjects();
-    });
+    selectedYear = 2024;
+    selectedLanguages = ['All'];
+    await initializeProjectLists();
+    filterProjects();
   }
 
   // Add this method to the _GoogleSummerOfCodeScreenState class

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:opso/modals/book_mark_model.dart';
 import 'package:opso/modals/linux_foundation_modal.dart';
 import 'package:opso/programs_info_pages/linux_info.dart';
+import 'package:opso/services/FirestoreService.dart';
 import 'package:opso/widgets/linux_foundation_widget.dart';
 
 class LinuxFoundation extends StatefulWidget {
@@ -23,15 +24,10 @@ class _LinuxFoundationState extends State<LinuxFoundation> {
   Future<void>? getProjectListFunction;
 
   Future<void> initializeProjectLists() async {
-    String response = await rootBundle
-        .loadString('assets/projects/linux_foundation/linux_foundation.json');
-
-    var jsonList = await json.decode(response);
-    for (var data in jsonList) {
-      modals.add(LinuxFoundationModal.fromMap(data));
-    }
-    projectList = List.of(modals);
-    // setState(() {});
+    final data = await FirestoreService().getLinuxProjects();
+    setState(() {
+      projectList = data;
+    });
   }
 
   @override
@@ -50,13 +46,11 @@ class _LinuxFoundationState extends State<LinuxFoundation> {
 
   void search(String searchText) {
     if (searchText.isEmpty) {
-      setState(() {
-        projectList = modals;
-      });
+      initializeProjectLists();
       return;
     }
     projectList = projectList
-        .where((LinuxFoundationModal element) =>
+        .where((element) =>
             element.name.toLowerCase().contains(searchText.toLowerCase()))
         .toList();
     setState(() {});

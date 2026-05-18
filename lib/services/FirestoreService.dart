@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:opso/modals/GSoC/Gsoc.dart';
 import 'package:opso/modals/gsod/gsod_modal_old.dart';
 import '../modals/fossasia_project_modal.dart';
 import '../modals/gsod/gsod_modal_new.dart';
@@ -10,6 +11,7 @@ import '../modals/rsoc_project_modal.dart';
 import '../modals/sob_project_modal.dart';
 import '../modals/sokde_project_modal.dart';
 import '../modals/swoc_project_modal.dart';
+import '../modals/linux_foundation_modal.dart';
 
 class FirestoreService {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -223,6 +225,43 @@ class FirestoreService {
     }).toList();
   }
 
+  Future<List<LinuxFoundationModal>> getLinuxProjects() async {
+    final snapshot = await _db.collection('programs').doc('linux_foundation').collection('projects').get();
+
+    return snapshot.docs.map((doc){
+      final item = doc.data();
+      return LinuxFoundationModal(name: item['title'] ?? '', projectUrl: item['links']['official'] ?? '', imageUrl: item['extra']['image_url'] ?? '');
+    }).toList();
+  }
+  
+  Future<List<Organization>> getGsocOrgs(int year) async {
+  final data = await _fetchProjects('gsoc', year);
+  return data.map((item) => Organization(
+    name: item['title'] ?? '',
+    imageUrl: item['extra']?['imageUrl'] ?? '',
+    imageBackgroundColor: item['extra']?['imageBackgroundColor'] ?? '',
+    description: item['description'] ?? '',
+    url: item['links']?['official'] ?? '',
+    numProjects: item['extra']?['numProjects'] ?? 0,
+    category: item['extra']?['category'] ?? '',
+    projectsUrl: item['links']?['projects'] ?? '',
+    ircChannel: item['extra']?['ircChannel'] ?? '',
+    contactEmail: item['extra']?['contactEmail'] ?? '',
+    mailingList: item['links']?['mailing_list'] ?? '',
+    twitterUrl: item['links']?['twitter'] ?? '',
+    blogUrl: item['extra']?['blogUrl'] ?? '',
+    topics: List<String>.from(item['extra']?['topics'] ?? []),
+    technologies: List<String>.from(item['techstack'] ?? []),
+    projects: (item['extra']?['projects'] as List? ?? []).map((p) => Project(
+      title: p['title'] ?? '',
+      shortDescription: p['shortDescription'] ?? '',
+      description: '',
+      studentName: p['studentName'] ?? '',
+      codeUrl: '',
+      projectUrl: p['projectUrl'] ?? '',
+    )).toList(),
+  )).toList();
+}
   // ─── Clear Cache ───────────────────────────────────────────────────────────
 
   void clearCache() => _cache.clear();

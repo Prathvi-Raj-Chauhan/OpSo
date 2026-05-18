@@ -61,22 +61,6 @@ class _SWOCScreenState extends State<SWOCScreen> {
     'Dart'
   ];
 
-  Future<void> _loadProjects(String path, List<SwocProjectModal> list) async {
-    try {
-      String response = await rootBundle.loadString(path);
-      if (response.isNotEmpty) {
-        var jsonList = json.decode(response) as List;
-        list.addAll(jsonList
-            .map((data) => SwocProjectModal.getDataFromJson(data))
-            .toList());
-        print('Loaded projects from $path: ${list.length}');
-      } else {
-        print('Error: JSON data is null or empty in $path');
-      }
-    } catch (e) {
-      print('Error loading projects from $path: $e');
-    }
-  }
 
   List<String> _extractUniqueValues(
       String Function(SwocProjectModal) extractor) {
